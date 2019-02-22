@@ -637,9 +637,9 @@ insertPushRight newA (ListZipper l a r) = ListZipper l newA (a :. r)
 -- [5,12] >8< [15,24,12]
 instance Applicative ListZipper where
 -- /Tip:/ Use @List#repeat@.
-  pure a = ListZipper (pure a) a (pure a) 
+  pure a = ListZipper (produce id a) a (produce id a) 
 -- /Tip:/ Use `zipWith`
-  (<*>) (ListZipper fl fa fr) (ListZipper l a r) = ListZipper (fl <*> l) (fa a) (fr <*> r)
+  (<*>) (ListZipper fl fa fr) (ListZipper l a r) = ListZipper (zipWith id fl l) (fa a) (zipWith id fr r)
 
 -- | Implement the `Applicative` instance for `MaybeListZipper`.
 --
@@ -662,8 +662,9 @@ instance Applicative ListZipper where
 -- >>> IsNotZ <*> IsNotZ
 -- ><
 instance Applicative MaybeListZipper where
-  pure = error "todo: Course.ListZipper (<<=)#instance ListZipper"
-  (<*>) _ = error "todo: Course.ListZipper (<<=)#instance ListZipper"
+  pure a = IsZ (pure a)
+  (<*>) (IsZ flz) (IsZ lz) = IsZ (flz <*> lz)
+  (<*>) _ _ = IsNotZ
 
 -- | Implement the `Extend` instance for `ListZipper`.
 -- This implementation "visits" every possible zipper value derivable from a given zipper (i.e. all zippers to the left and right).
@@ -673,8 +674,13 @@ instance Applicative MaybeListZipper where
 -- >>> id <<= (zipper [2,1] 3 [4,5])
 -- [[1] >2< [3,4,5],[] >1< [2,3,4,5]] >[2,1] >3< [4,5]< [[3,2,1] >4< [5],[4,3,2,1] >5< []]
 instance Extend ListZipper where
-  (<<=) =
-    error "todo: Course.ListZipper (<<=)#instance ListZipper"
+  (<<=) flz lz = 
+    let result = flz lz 
+        llz = moveLeft lz
+        rlz = moveRight lz 
+        unfoldL = unfoldr (\(IsZ llz') -> Full (flz llz', moveLeft llz')) llz 
+        unfoldR = unfoldr (\(IsZ rlz') -> Full (flz rlz', moveRight rlz')) rlz in
+    ListZipper (unfoldL result unfoldR)
 
 -- | Implement the `Extend` instance for `MaybeListZipper`.
 -- This instance will use the `Extend` instance for `ListZipper`.
