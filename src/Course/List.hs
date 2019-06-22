@@ -91,7 +91,7 @@ headOr _ (h :. _) = h
 product ::
   List Int
   -> Int
-product list = foldRight (*) 1 list
+product = foldRight (*) 1
 
 -- | Sum the elements of the list.
 --
@@ -105,7 +105,7 @@ product list = foldRight (*) 1 list
 sum ::
   List Int
   -> Int
-sum list = foldRight (+) 0 list
+sum = foldRight (+) 0
 
 -- | Return the length of the list.
 --
@@ -116,7 +116,7 @@ sum list = foldRight (+) 0 list
 length ::
   List a
   -> Int
-length list = foldRight (\_ b -> b + 1) 0 list
+length = foldRight (\_ b -> b + 1) 0
 
 -- | Map the given function on each element of the list.
 --
@@ -202,8 +202,6 @@ flatMap ::
   -> List a
   -> List b
 flatMap f = (flatten . map f)
-{-flatMap _ Nil = Nil
-flatMap f (h :. t) = f h ++ flatMap f t-}
 
 -- | Flatten a list of lists to a list (again).
 -- HOWEVER, this time use the /flatMap/ function that you just wrote.
@@ -213,8 +211,6 @@ flattenAgain ::
   List (List a)
   -> List a
 flattenAgain = flatMap id
-{-flattenAgain Nil = Nil
-flattenAgain (h :. t) = flatMap (\a -> a :. Nil) h ++ flattenAgain t-}
 
 -- | Convert a list of optional values to an optional list of values.
 --
@@ -242,14 +238,6 @@ seqOptional ::
   List (Optional a)
   -> Optional (List a)
 seqOptional = foldRight (twiceOptional (:.)) (Full Nil)
-
-seqOptionalAgain ::
-  List (Optional a)
-  -> Optional (List a)
-seqOptionalAgain list = foldRight (\a b -> case (a, b) of 
-    (_, Empty) -> Empty
-    (Empty, _) -> Empty
-    (Full a', Full b') -> Full (a' :. b')) (Full Nil) list
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -307,8 +295,7 @@ lengthGT4 list = length (take 5 list) > 4
 reverse ::
   List a
   -> List a
-reverse Nil = Nil
-reverse (h :. t) = reverse t ++ (h :. Nil) 
+reverse = foldLeft (\b a -> a :. b) Nil
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements

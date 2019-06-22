@@ -110,7 +110,7 @@ getFile fp = (,) fp <$> readFile fp
 printFiles ::
   List (FilePath, Chars)
   -> IO ()
-printFiles = foldRight (\(fp, chars) acc -> printFile fp chars *> acc) (pure ())
+printFiles l = void $ sequence $ (\(fp, content) -> printFile fp content) <$> l 
 
 -- Given the file name, and file contents, print them.
 -- Use @putStrLn@.

@@ -76,9 +76,8 @@ instance Functor (State s) where
     -> State s a
     -> State s b
   (<$>) f sa = State $ \s ->
-    let (a, s') = runState sa s
-        b = f a in 
-        (b, s')
+    let (a, s') = runState sa s in
+      (f a, s')
 
 -- | Implement the `Applicative` instance for `State s`.
 --
@@ -102,9 +101,8 @@ instance Applicative (State s) where
     -> State s b 
   (<*>) fsa sa = State $ \s -> 
     let (f, s') = runState fsa s
-        (a, s'') = runState sa s'
-        b = f a in
-        (b, s'')
+        (a, s'') = runState sa s' in
+        (f a, s'')
 
 -- | Implement the `Bind` instance for `State s`.
 --

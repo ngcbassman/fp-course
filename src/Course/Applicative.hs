@@ -69,8 +69,7 @@ instance Applicative List where
     List (a -> b)
     -> List a
     -> List b
-  (<*>) (fh :. ft) list = (fh <$> list) ++ (ft <*> list)  
-  (<*>) _ _ = Nil
+  (<*>) lf l = foldRight (\f b -> (f <$> l) ++ b) Nil lf
 
 -- | Witness that all things with (<*>) and pure also have (<$>).
 --
@@ -353,12 +352,11 @@ filtering ::
   (a -> f Bool)
   -> List a
   -> f (List a)
-filtering _ Nil = pure Nil
-filtering f (x :. xs) = (++) <$> ((potato x) <$> f x) <*> filtering f xs
-
-potato :: a -> Bool -> List a
-potato a b = case b of True -> a :. Nil
-                       False -> Nil
+filtering f = foldRight (\a fb -> 
+  lift2 (\match b -> 
+    if match then a :. b else b) 
+    (f a) fb) 
+  (pure Nil)
 
 -----------------------
 -- SUPPORT LIBRARIES --
