@@ -33,7 +33,7 @@ newtype State s a =
 
 -- | Run the `State` seeded with `s` and retrieve the resulting state.
 --
--- prop> \(Fun _ f) -> exec (State f) s == snd (runState (State f) s)
+-- prop> \(Fun _ f) s -> exec (State f) s == snd (runState (State f) s)
 exec ::
   State s a
   -> s
@@ -42,7 +42,7 @@ exec (State f) s = snd $ runState (State f) s
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
--- prop> \(Fun _ f) -> eval (State f) s == fst (runState (State f) s)
+-- prop> \(Fun _ f) s -> eval (State f) s == fst (runState (State f) s)
 eval ::
   State s a
   -> s
@@ -87,8 +87,7 @@ instance Functor (State s) where
 -- >>> runState (pure (+1) <*> pure 0) 0
 -- (1,0)
 --
--- >>> import qualified Prelude as P
--- >>> runState (State (\s -> ((+3), s P.++ ["apple"])) <*> State (\s -> (7, s P.++ ["banana"]))) []
+-- >>> runState (State (\s -> ((+3), s ++ ("apple":.Nil))) <*> State (\s -> (7, s ++ ("banana":.Nil)))) Nil
 -- (10,["apple","banana"])
 instance Applicative (State s) where
   pure ::
@@ -98,13 +97,19 @@ instance Applicative (State s) where
   (<*>) ::
     State s (a -> b)
     -> State s a
+<<<<<<< HEAD
     -> State s b 
   (<*>) fsa sa = State $ \s -> 
     let (f, s') = runState fsa s
         (a, s'') = runState sa s' in
         (f a, s'')
+=======
+    -> State s b
+  (<*>) =
+    error "todo: Course.State (<*>)#instance (State s)"
+>>>>>>> upstream/master
 
--- | Implement the `Bind` instance for `State s`.
+-- | Implement the `Monad` instance for `State s`.
 --
 -- >>> runState ((const $ put 2) =<< put 1) 0
 -- ((),2)
@@ -145,8 +150,8 @@ findM pred = foldRight (\a acc -> pred a >>= (\found -> if found then pure (Full
 --
 -- /Tip:/ Use `findM` and `State` with a @Data.Set#Set@.
 --
--- prop> case firstRepeat xs of Empty -> let xs' = hlist xs in nub xs' == xs'; Full x -> length (filter (== x) xs) > 1
--- prop> case firstRepeat xs of Empty -> True; Full x -> let (l, (rx :. rs)) = span (/= x) xs in let (l2, r2) = span (/= x) rs in let l3 = hlist (l ++ (rx :. Nil) ++ l2) in nub l3 == l3
+-- prop> \xs -> case firstRepeat xs of Empty -> let xs' = hlist xs in nub xs' == xs'; Full x -> length (filter (== x) xs) > 1
+-- prop> \xs -> case firstRepeat xs of Empty -> True; Full x -> let (l, (rx :. rs)) = span (/= x) xs in let (l2, r2) = span (/= x) rs in let l3 = hlist (l ++ (rx :. Nil) ++ l2) in nub l3 == l3
 firstRepeat ::
   Ord a =>
   List a
@@ -170,9 +175,9 @@ firstRepeat l =
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
 --
--- prop> firstRepeat (distinct xs) == Empty
+-- prop> \xs -> firstRepeat (distinct xs) == Empty
 --
--- prop> distinct xs == distinct (flatMap (\x -> x :. x :. Nil) xs)
+-- prop> \xs -> distinct xs == distinct (flatMap (\x -> x :. x :. Nil) xs)
 distinct ::
   Ord a =>
   List a

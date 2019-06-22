@@ -54,11 +54,10 @@ instance Functor f => Functor (StateT s f) where
 -- >>> runStateT (pure (+2) <*> ((pure 2) :: StateT Int List Int)) 0
 -- [(4,0)]
 --
--- >>> import qualified Prelude as P
--- >>> runStateT (StateT (\s -> Full ((+2), s P.++ [1])) <*> (StateT (\s -> Full (2, s P.++ [2])))) [0]
+-- >>> runStateT (StateT (\s -> Full ((+2), s ++ (1:.Nil))) <*> (StateT (\s -> Full (2, s ++ (2:.Nil))))) (0:.Nil)
 -- Full (4,[0,1,2])
 --
--- >>> runStateT (StateT (\s -> ((+2), s P.++ [1]) :. ((+3), s P.++ [1]) :. Nil) <*> (StateT (\s -> (2, s P.++ [2]) :. Nil))) [0]
+-- >>> runStateT (StateT (\s -> ((+2), s ++ (1:.Nil)) :. ((+3), s ++ (1:.Nil)) :. Nil) <*> (StateT (\s -> (2, s ++ (2:.Nil)) :. Nil))) (0:.Nil)
 -- [(4,[0,1,2]),(5,[0,1,2])]
 instance Monad f => Applicative (StateT s f) where
   pure ::
@@ -66,7 +65,7 @@ instance Monad f => Applicative (StateT s f) where
     -> StateT s f a
   pure a = StateT $ \s -> pure (a, s) 
   (<*>) ::
-   StateT s f (a -> b)
+    StateT s f (a -> b)
     -> StateT s f a
     -> StateT s f b
   (<*>) sfab sfa = StateT $ \s ->
@@ -97,7 +96,7 @@ type State' s a =
 -- | Provide a constructor for `State'` values
 --
 -- >>> runStateT (state' $ runState $ put 1) 0
--- ExactlyOne  ((),1)
+-- ExactlyOne ((),1)
 state' ::
   (s -> (a, s))
   -> State' s a
@@ -116,6 +115,9 @@ runState' sf s =
   state
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting state.
+--
+-- >>> execT (StateT $ \s -> Full ((), s + 1)) 2
+-- Full 3
 execT ::
   Functor f =>
   StateT s f a
@@ -123,7 +125,10 @@ execT ::
   -> f s
 execT state s = snd <$> runStateT state s
 
--- | Run the `State` seeded with `s` and retrieve the resulting state.
+-- | Run the `State'` seeded with `s` and retrieve the resulting state.
+--
+-- >>> exec' (state' $ \s -> ((), s + 1)) 2
+-- 3
 exec' ::
   State' s a
   -> s
@@ -131,6 +136,9 @@ exec' ::
 exec' state s = snd $ runState' state s 
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting value.
+--
+-- >>> evalT (StateT $ \s -> Full (even s, s + 1)) 2
+-- Full True
 evalT ::
   Functor f =>
   StateT s f a
@@ -138,7 +146,10 @@ evalT ::
   -> f a
 evalT state s = fst <$> runStateT state s
 
--- | Run the `State` seeded with `s` and retrieve the resulting value.
+-- | Run the `State'` seeded with `s` and retrieve the resulting value.
+--
+-- >>> eval' (state' $ \s -> (even s, s + 1)) 5
+-- False
 eval' ::
   State' s a
   -> s
@@ -171,9 +182,9 @@ putT s = StateT (\_ -> pure ((), s))
 --
 -- /Tip:/ Use `filtering` and `State'` with a @Data.Set#Set@.
 --
--- prop> distinct' xs == distinct' (flatMap (\x -> x :. x :. Nil) xs)
+-- prop> \xs -> distinct' xs == distinct' (flatMap (\x -> x :. x :. Nil) xs)
 distinct' ::
-  (Ord a, Num a) =>
+  Ord a =>
   List a
   -> List a
 distinct' l = 
@@ -231,7 +242,27 @@ data OptionalT f a =
 instance Functor f => Functor (OptionalT f) where
   (<$>) f (OptionalT foa) = OptionalT $ (mapOptional f <$> foa)
 
--- | Implement the `Applicative` instance for `OptionalT f` given a Applicative f.
+-- | Implement the `Applicative` instance for `OptionalT f` given a Monad f.
+--
+-- /Tip:/ Use `onFull` to help implement (<*>).
+--
+-- >>> runOptionalT $ OptionalT Nil <*> OptionalT (Full 1 :. Full 2 :. Nil)
+-- []
+--
+-- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> OptionalT Nil
+-- []
+--
+-- >>> runOptionalT $ OptionalT (Empty :. Nil) <*> OptionalT (Empty :. Nil)
+-- [Empty]
+--
+-- >>> runOptionalT $ OptionalT (Full (+1) :. Empty :. Nil) <*> OptionalT (Empty :. Nil)
+-- [Empty,Empty]
+--
+-- >>> runOptionalT $ OptionalT (Empty :. Nil) <*> OptionalT (Full 1 :. Full 2 :. Nil)
+-- [Empty]
+--
+-- >>> runOptionalT $ OptionalT (Full (+1) :. Empty :. Nil) <*> OptionalT (Full 1 :. Full 2 :. Nil)
+-- [Full 2,Full 3,Empty]
 --
 -- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty,Full 3,Empty]
@@ -327,3 +358,15 @@ distinctG l =
           StateT $ \s -> OptionalT $ Logger evenMsg (Full (not repeated, s))
       
   in runOptionalT $ flip evalT S.empty $ filtering pred l
+
+onFull ::
+  Applicative f =>
+  (t -> f (Optional a))
+  -> Optional t
+  -> f (Optional a)
+onFull g o =
+  case o of
+    Empty ->
+      pure Empty
+    Full a ->
+      g a

@@ -40,7 +40,7 @@ data List t =
 infixr 5 :.
 
 instance Show t => Show (List t) where
-  show = show . foldRight (:) []
+  show = show . hlist
 
 -- The list of integers from zero to infinity.
 infinity ::
@@ -68,9 +68,9 @@ foldLeft f b (h :. t) = let b' = f b h in b' `seq` foldLeft f b' t
 -- >>> headOr 3 Nil
 -- 3
 --
--- prop> x `headOr` infinity == 0
+-- prop> \x -> x `headOr` infinity == 0
 --
--- prop> x `headOr` Nil == x
+-- prop> \x -> x `headOr` Nil == x
 headOr ::
   a
   -> List a
@@ -101,7 +101,7 @@ product = foldRight (*) 1
 -- >>> sum (1 :. 2 :. 3 :. 4 :. Nil)
 -- 10
 --
--- prop> foldLeft (-) (sum x) x == 0
+-- prop> \x -> foldLeft (-) (sum x) x == 0
 sum ::
   List Int
   -> Int
@@ -112,7 +112,7 @@ sum = foldRight (+) 0
 -- >>> length (1 :. 2 :. 3 :. Nil)
 -- 3
 --
--- prop> sum (map (const 1) x) == length x
+-- prop> \x -> sum (map (const 1) x) == length x
 length ::
   List a
   -> Int
@@ -123,9 +123,9 @@ length = foldRight (\_ b -> b + 1) 0
 -- >>> map (+10) (1 :. 2 :. 3 :. Nil)
 -- [11,12,13]
 --
--- prop> headOr x (map (+1) infinity) == 1
+-- prop> \x -> headOr x (map (+1) infinity) == 1
 --
--- prop> map id x == x
+-- prop> \x -> map id x == x
 map ::
   (a -> b)
   -> List a
@@ -138,11 +138,11 @@ map f (h :. t) = f h :. map f t
 -- >>> filter even (1 :. 2 :. 3 :. 4 :. 5 :. Nil)
 -- [2,4]
 --
--- prop> headOr x (filter (const True) infinity) == 0
+-- prop> \x -> headOr x (filter (const True) infinity) == 0
 --
--- prop> filter (const True) x == x
+-- prop> \x -> filter (const True) x == x
 --
--- prop> filter (const False) x == Nil
+-- prop> \x -> filter (const False) x == Nil
 filter ::
   (a -> Bool)
   -> List a
@@ -154,13 +154,13 @@ filter f = foldRight (\a b -> if f a then a :. b else b) Nil
 -- >>> (1 :. 2 :. 3 :. Nil) ++ (4 :. 5 :. 6 :. Nil)
 -- [1,2,3,4,5,6]
 --
--- prop> headOr x (Nil ++ infinity) == 0
+-- prop> \x -> headOr x (Nil ++ infinity) == 0
 --
--- prop> headOr x (y ++ infinity) == headOr 0 y
+-- prop> \x -> headOr x (y ++ infinity) == headOr 0 y
 --
--- prop> (x ++ y) ++ z == x ++ (y ++ z)
+-- prop> \x -> (x ++ y) ++ z == x ++ (y ++ z)
 --
--- prop> x ++ Nil == x
+-- prop> \x -> x ++ Nil == x
 (++) ::
   List a
   -> List a
@@ -176,11 +176,11 @@ infixr 5 ++
 -- >>> flatten ((1 :. 2 :. 3 :. Nil) :. (4 :. 5 :. 6 :. Nil) :. (7 :. 8 :. 9 :. Nil) :. Nil)
 -- [1,2,3,4,5,6,7,8,9]
 --
--- prop> headOr x (flatten (infinity :. y :. Nil)) == 0
+-- prop> \x -> headOr x (flatten (infinity :. y :. Nil)) == 0
 --
--- prop> headOr x (flatten (y :. infinity :. Nil)) == headOr 0 y
+-- prop> \x -> headOr x (flatten (y :. infinity :. Nil)) == headOr 0 y
 --
--- prop> sum (map length x) == length (flatten x)
+-- prop> \x -> sum (map length x) == length (flatten x)
 flatten ::
   List (List a)
   -> List a
@@ -192,11 +192,11 @@ flatten (h :. t) = h ++ flatten t
 -- >>> flatMap (\x -> x :. x + 1 :. x + 2 :. Nil) (1 :. 2 :. 3 :. Nil)
 -- [1,2,3,2,3,4,3,4,5]
 --
--- prop> headOr x (flatMap id (infinity :. y :. Nil)) == 0
+-- prop> \x -> headOr x (flatMap id (infinity :. y :. Nil)) == 0
 --
--- prop> headOr x (flatMap id (y :. infinity :. Nil)) == headOr 0 y
+-- prop> \x -> headOr x (flatMap id (y :. infinity :. Nil)) == headOr 0 y
 --
--- prop> flatMap id (x :: List (List Int)) == flatten x
+-- prop> \x -> flatMap id (x :: List (List Int)) == flatten x
 flatMap ::
   (a -> List b)
   -> List a
@@ -206,7 +206,7 @@ flatMap f = (flatten . map f)
 -- | Flatten a list of lists to a list (again).
 -- HOWEVER, this time use the /flatMap/ function that you just wrote.
 --
--- prop> let types = x :: List (List Int) in flatten x == flattenAgain x
+-- prop> \x -> let types = x :: List (List Int) in flatten x == flattenAgain x
 flattenAgain ::
   List (List a)
   -> List a
@@ -214,7 +214,7 @@ flattenAgain = flatMap id
 
 -- | Convert a list of optional values to an optional list of values.
 --
--- * If the list contains all `Full` values, 
+-- * If the list contains all `Full` values,
 -- then return `Full` list of values.
 --
 -- * If the list contains one or more `Empty` values,
@@ -289,9 +289,9 @@ lengthGT4 list = length (take 5 list) > 4
 -- >>> take 1 (reverse (reverse largeList))
 -- [1]
 --
--- prop> let types = x :: List Int in reverse x ++ reverse y == reverse (y ++ x)
+-- prop> \x -> let types = x :: List Int in reverse x ++ reverse y == reverse (y ++ x)
 --
--- prop> let types = x :: Int in reverse (x :. Nil) == x :. Nil
+-- prop> \x -> let types = x :: Int in reverse (x :. Nil) == x :. Nil
 reverse ::
   List a
   -> List a
@@ -317,9 +317,9 @@ produce f x = x :. produce f (f x)
 -- >>> notReverse Nil
 -- []
 --
--- prop> let types = x :: List Int in notReverse x ++ notReverse y == notReverse (y ++ x)
+-- prop> \x -> let types = x :: List Int in notReverse x ++ notReverse y == notReverse (y ++ x)
 --
--- prop> let types = x :: Int in notReverse (x :. Nil) == x :. Nil
+-- prop> \x -> let types = x :: Int in notReverse (x :. Nil) == x :. Nil
 notReverse ::
   List a
   -> List a

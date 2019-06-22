@@ -14,7 +14,7 @@ looking for the *answers* (not the exercises), please go to https://github.com/t
 #### Special note 2
 
 As of February 2017, this repository is taking the place of the repository hosted at
-https://github.com/NICTA/course which is deprecated. 
+https://github.com/NICTA/course which is deprecated.
 
 Data61 replaces what was NICTA since July 2016. The new repository is located at
 https://github.com/data61/fp-course.
@@ -165,21 +165,40 @@ available in this repository for your convenience.
 
 ### Running the tests
 
-Tests are available as a [tasty](https://hackage.haskell.org/package/tasty)
-test suite.
+Tests are stored under the `test/` directory. Each module from the course that
+has tests has a corresponding `<MODULE>Test.hs` file. Within each test module,
+tests for each function are grouped using the `testGroup` function. Within each
+test group there are test cases (`testCase` function), and properties
+(`testProperty` function).
+
+Tests are able to be run using either a built-in test runner that has no
+requirement beyond those of the course (a supported version of GHCi), or
+[tasty](https://hackage.haskell.org/package/tasty).
+
+**NOTE**: If running tests using the embedded runner, no property tests will be
+run.
+
+#### Built-in runner
+
+Each test module exports a function called `courseTest` that may be used to run tests. To run
+tests, load the relevant module, and then run `courseTest <tests>`. For example, in `GHCi`:
+
+    λ> :l test/Course/ListTest.hs
+    λ> courseTest test_List
+    λ> courseTest productTest
+
+Alternatively, the full test suite may be run by loading `test/TestLoader.hs` and running
+`courseTest tests`.
 
 #### tasty
 
-Tasty tests are stored under the `test/` directory. Each module from the course
-that has tests has a corresponding `<MODULE>Test.hs` file. Within each test
-module, tests for each function are grouped using the `testGroup` function.
-Within each test group there are test cases (`testCase` function), and
-properties (`testProperty` function).
+Before running the tests, ensure that you have an up-to-date installation
+of GHC and cabal-install from your system package manager or use the minimal
+installers found at [haskell.org](https://www.haskell.org/downloads#minimal).
 
 To run the full test suite, build the project as follows:
 
     > cabal update
-    > cabal install cabal-install
     > cabal install --only-dependencies --enable-tests
     > cabal configure --enable-tests
     > cabal build
@@ -190,29 +209,32 @@ pattern. Tests are organised in nested groups named after the relevant module
 and function, so pattern matching should be intuitive. For example, to run the
 tests for the `List` module you could run:
 
-    > cabal test tasty --show-detail=direct --test-option=--pattern=List
+    > cabal test tasty --show-detail=direct --test-option=--pattern="Tests.List."
 
 Likewise, to run only the tests for the `headOr` function in the `List` module, you could use:
 
-    > cabal test tasty --show-detail=direct --test-option=--pattern=List/headOr
+    > cabal test tasty --show-detail=direct --test-option=--pattern="List.headOr"
 
-In addition, GHCi may be used to run tasty tests. Assuming you have run `ghci`
+In addition, GHCi may be used to run tests using tasty. Assuming you have run `ghci`
 from the root of the project, you may do the following. Remember that GHCi has
 tab completion, so you can save yourself some typing.
 
-    > -- import the defaultMain function from Tasty - runs something of type TestTree
-    > import Test.Tasty (defaultMain)
-    >
-    > -- Load the test module you'd like to run tests for
-    > :l test/Course/ListTest.hs
-    >
-    > -- Browse the contents of the loaded module - anything of type TestTree
-    > -- may be run
-    > :browse Course.ListTest
-    >
-    > -- Run test for a particular function
-    > defaultMain headOrTest
+    λ> -- Load the tasty test runner and tests
+    λ> :l test/TastyLoader.hs
+    λ>
+    λ> -- Tests may be referenced by module
+    λ> tastyTest ListTest.headOrTest
+    λ> tastyTest OptionalTest.valueOrTest
+    λ> tastyTest tests
 
+#### `:reload` and run tests
+
+In addition there are custom `:courseTest` and `:tastyTest` commands defined
+in `.ghci` that will invoke `:reload` and then `courseTest` or `tastyTest`.
+
+For example:
+
+    λ> :tastyTest List.test_List
 
 #### doctest
 
@@ -273,11 +295,28 @@ After these are completed, complete the exercises in the `projects` directory.
 If you choose to use the [Leksah IDE for Haskell](http://leksah.org/), the
 following tips are recommended:
 
-* Clone the git repo use Package -> Add to add course.cabal.
-* Click on the green tick on the toolbar to include `cabal test`
-  in each build and list the failures in the Errors pane.
-* Choose Package -> Configure to make sure `--enable-tests`
-  is used (just building may cause cabal to configure without).
+* [Install Leksah from github](https://github.com/leksah/leksah#getting-leksah).
+  If you are using Nix to install Leksah launch it with `./leksah-nix.sh ghc822`
+  as the Nix files for this course use GHC 8.2.2.
+* Clone this fp-course git repo use File -> Open Project to open the cabal.project file.
+* Mouse over the toolbar items near the middle of toolbar to see the names of them.
+  Set the following items on/off:
+  * `Build in the background and report errors` ON - unless you prefer to triger builds
+     manualy with Ctrl + B to build (Command + B on OS X)
+  * `Use GHC to compile` ON
+  * `Use GHCJS to compile` OFF
+  * `Use GHCi debugger to build and run` ON
+  * `Make documentation while building` OFF
+  * `Run unit tests when building` ON
+  * `Run benchmakrs when building` OFF
+  * `Make dependent packages` ON
+* If you are using Nix, click on the nix button on the toolbar (tool tip is "Refresh
+  Leksah's cached nix environment variables for the active project").  This will use
+  `nix-shell` to build an environment for running the builds in.  If `nix-shell` has
+  not been run before for the `fp-course` repo it may take some time to complete.
+  When it is finished a line of green '-' characters should be printed in the Panes -> Log.
+* Restart Leksah as there is a bug in the metadata collection that
+  will prevent it from indexing the new project without a restart.
 * Ctrl + B to build (Command + B on OS X).
 * The test failures should show up in Panes -> Errors.
 * Pane -> Log often has useful error messages.
@@ -286,12 +325,9 @@ following tips are recommended:
   to go to previous item).
 * Ctrl + Enter on a line starting "-- >>>" will run the
   selected expression in GHCi (Ctrl + Enter on OS X too).
-  The output goes to Panes -> Log and Panes -> Output.
+  The output goes to Panes -> Log (on Linux it will also show up in Panes -> Output).
 * The last GHCi expression is reevaluated after each :reload
   triggered by changes in the code.
-* Uncheck Debug -> GHCi when you are done with GHCi and
-  Leksah will go back to running cabal build and cabal test
-  instead.
 
 ### Introducing Haskell
 
@@ -420,6 +456,39 @@ Are these two programs, the same program?
               _ <- writeFile file "ghijkl"
               y <- expr
               putStrLn (show (x, y))
+
+What about these two programs?
+
+    def writeFile(filename, contents):
+        with open(filename, "w") as f:
+            f.write(contents)
+
+    def readFile(filename):
+        contents = ""
+        with open(filename, "r") as f:
+            contents = f.read()
+            return contents
+
+    def p1():
+        file = "/tmp/file"
+
+        writeFile(file, "abcdef")
+        x = readFile(file)
+        print(x)
+        writeFile(file, "ghijkl")
+        y = readFile(file)
+        print (x + y)
+
+    def p2():
+        file = "/tmp/file"
+        expr = readFile(file)
+
+        writeFile(file, "abcdef")
+        x = expr
+        print(x)
+        writeFile(file, "ghijkl")
+        y = expr
+        print (x + y)
 
 ### One-day
 

@@ -2,12 +2,13 @@
 *#*
 
 # CABAL
-/dist
-/dist-newstyle
-/cabal-dev
-/.cabal-sandbox
-/cabal.sandbox.config
-/cabal.project.local
+dist
+dist-newstyle
+cabal-dev
+.cabal-sandbox
+cabal.sandbox.config
+cabal.project.local
+.ghc.environment.*
 
 # Haskell Program Coverage
 /.hpc
@@ -36,6 +37,9 @@ TAGS
 # Vagrant
 .vagrant
 ops/*.retry
+<<<<<<< HEAD
 
 .DS_Store
 src/.DS_Store
+=======
+>>>>>>> upstream/master
