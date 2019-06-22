@@ -117,15 +117,6 @@ natural =
   bindParser (\k -> case read k of Empty  -> constantParser (UnexpectedString k)
                                    Full h -> valueParser h) (list1 digit)
 
--- | Return a parser that always succeeds with the given value and consumes no input.
---
--- >>> parse (valueParser 3) "abc"
--- Result >abc< 3
-valueParser ::
-  a
-  -> Parser a
-valueParser a = P $ \i -> Result i a
-
 -- | Return a parser that succeeds with a character off the input or fails with an error if the input is empty.
 --
 -- >>> parse character "abc"
@@ -154,22 +145,6 @@ mapParser ::
   -> Parser b
 mapParser f (P ira) = P $ \input -> f <$> (ira input)
 
-instance Functor Parser where
-  (<$>) ::
-    (a -> b)
-    -> Parser a
-    -> Parser b
-  (<$>) =
-     error "todo: Course.Parser (<$>)#instance Parser"
-
-
-bindParser f (P ira) = P $ \input -> 
-  let resultA = ira input in
-  onResult resultA (\input' a -> 
-    let (P irb) = (f a) in
-    irb input')  
-
-
 -- | Return a parser that puts its input into the given parser and
 --
 --   * if that parser succeeds with a value (a), ignore that value
@@ -197,9 +172,7 @@ bindParser f (P ira) = P $ \input ->
 valueParser ::
   a
   -> Parser a
-  -> Parser b
-valueParser =
-  error "todo: Course.Parser#valueParser"
+valueParser a = P $ \i -> Result i a
 
 -- | Return a parser that tries the first parser for a successful value.
 --
@@ -235,63 +208,15 @@ infixl 3 |||
 --     then put in the remaining input in the resulting parser.
 --
 --   * if that parser fails with an error the returned parser fails with that error.
---
-<<<<<<< HEAD
--- >>> parse (list (character *> valueParser 'v')) ""
--- Result >< ""
-list ::
-  Parser a
-  -> Parser (List a)
-list pa = list1 pa ||| valueParser Nil
-
-
--- | Return a parser that produces at least one value from the given parser then
--- continues producing a list of values from the given parser (to ultimately produce a non-empty list).
-=======
--- >>> parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "abc"
--- Result >bc< 'v'
->>>>>>> upstream/master
---
--- >>> parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "a"
--- Result >< 'v'
---
--- >>> parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "xabc"
--- Result >bc< 'a'
---
--- >>> isErrorResult (parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "")
--- True
---
--- >>> isErrorResult (parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "x")
--- True
-<<<<<<< HEAD
-list1 ::
-  Parser a
-  -> Parser (List a)
-list1 pa = bindParser (\a -> ((a :. Nil) ++) <$> list pa) pa
-=======
-instance Monad Parser where
-  (=<<) ::
-    (a -> Parser b)
-    -> Parser a
-    -> Parser b
-  (=<<) =
-    error "todo: Course.Parser (=<<)#instance Parser"
-
--- | Write an Applicative functor instance for a @Parser@.
--- /Tip:/ Use @(=<<)@.
-instance Applicative Parser where
-  pure ::
-    a
-    -> Parser a
-  pure =
-    valueParser
-  (<*>) ::
-    Parser (a -> b)
-    -> Parser a
-    -> Parser b
-  (<*>) =
-    error "todo: Course.Parser (<*>)#instance Parser"
->>>>>>> upstream/master
+bindParser ::
+  (a -> Parser b)
+  -> Parser a
+  -> Parser b
+bindParser f (P ira) = P $ \input -> 
+  let resultA = ira input in
+  onResult resultA (\input' a -> 
+    let (P irb) = (f a) in
+    irb input')
 
 -- | Return a parser that produces a character but fails if
 --
@@ -369,8 +294,7 @@ space = satisfy isSpace
 list ::
   Parser a
   -> Parser (List a)
-list =
-  error "todo: Course.Parser#list"
+list pa = list1 pa ||| valueParser Nil
 
 -- | Return a parser that produces at least one value from the given parser then
 -- continues producing a list of values from the given parser (to ultimately produce a non-empty list).
@@ -388,8 +312,7 @@ list =
 list1 ::
   Parser a
   -> Parser (List a)
-list1 =
-  error "todo: Course.Parser#list1"
+list1 pa = bindParser (\a -> ((a :. Nil) ++) <$> list pa) pa
 
 -- | Return a parser that produces one or more space characters
 -- (consuming until the first non-space) but fails if
@@ -539,7 +462,7 @@ surnameParser = do
 -- True
 smokerParser ::
   Parser Bool
-smokerParser = is 'y' ||| is 'n'
+smokerParser = const True <$> is 'y' ||| const False <$> is 'n' 
 
 -- | Write part of a parser for Person#phoneBody.
 -- This parser will only produce a string of digits, dots or hyphens.
@@ -654,7 +577,6 @@ personParser = do
 
 ----
 
-<<<<<<< HEAD
 -- | Write a Functor instance for a @Parser@.
 -- /Tip:/ Use @bindParser@ and @valueParser@.
 instance Functor Parser where
@@ -677,7 +599,28 @@ instance Applicative Parser where
     -> Parser b
   (<*>) pf pa = bindParser (\a -> (\f -> f a) <$> pf) pa
 
--- | Write a Monad instance for a @Parser@.
+-- | Parsers can bind.
+-- Return a parser that puts its input into the given parser and
+--
+--   * if that parser succeeds with a value (a), put that value into the given function
+--     then put in the remaining input in the resulting parser.
+--
+--   * if that parser fails with an error the returned parser fails with that error.
+--
+-- >>> parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "abc"
+-- Result >bc< 'v'
+--
+-- >>> parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "a"
+-- Result >< 'v'
+--
+-- >>> parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "xabc"
+-- Result >bc< 'a'
+--
+-- >>> isErrorResult (parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "")
+-- True
+--
+-- >>> isErrorResult (parse ((\c -> if c == 'x' then character else valueParser 'v') =<< character) "x")
+-- True
 instance Monad Parser where
   (=<<) ::
     (a -> Parser b)
@@ -685,7 +628,6 @@ instance Monad Parser where
     -> Parser b
   (=<<) = bindParser
 
-=======
 -- Did you repeat yourself in `personParser` ? This might help:
 
 (>>=~) ::
@@ -707,4 +649,3 @@ infixl 1 >>=~
   f <*> spaces1 *> a
 
 infixl 4 <*>~
->>>>>>> upstream/master

@@ -97,17 +97,11 @@ instance Applicative (State s) where
   (<*>) ::
     State s (a -> b)
     -> State s a
-<<<<<<< HEAD
     -> State s b 
   (<*>) fsa sa = State $ \s -> 
     let (f, s') = runState fsa s
         (a, s'') = runState sa s' in
         (f a, s'')
-=======
-    -> State s b
-  (<*>) =
-    error "todo: Course.State (<*>)#instance (State s)"
->>>>>>> upstream/master
 
 -- | Implement the `Monad` instance for `State s`.
 --

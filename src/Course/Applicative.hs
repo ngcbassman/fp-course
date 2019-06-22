@@ -47,18 +47,12 @@ instance Applicative ExactlyOne where
   pure ::
     a
     -> ExactlyOne a
-<<<<<<< HEAD
   pure a = ExactlyOne a
   (<*>) :: 
-=======
-  pure =
-    error "todo: Course.Applicative pure#instance ExactlyOne"
-  (<*>) ::
->>>>>>> upstream/master
     ExactlyOne (a -> b)
     -> ExactlyOne a
     -> ExactlyOne b
-  (<*>) (ExactlyOne f) (ExactlyOne a) = pure (f a)
+  (<*>) (ExactlyOne f) a = f <$> a
 
 -- | Insert into a List.
 --
@@ -77,7 +71,6 @@ instance Applicative List where
     -> List b
   (<*>) lf l = foldRight (\f b -> (f <$> l) ++ b) Nil lf
 
-<<<<<<< HEAD
 -- | Witness that all things with (<*>) and pure also have (<$>).
 --
 -- >>> (+1) <$$> (ExactlyOne 2)
@@ -95,8 +88,6 @@ instance Applicative List where
   -> f b
 (<$$>) f fa = pure f <*> fa
 
-=======
->>>>>>> upstream/master
 -- | Insert into an Optional.
 --
 -- prop> \x -> pure x == Full x
@@ -118,7 +109,7 @@ instance Applicative Optional where
     Optional (a -> b)
     -> Optional a
     -> Optional b
-  (<*>) (Full f) a = f <$> a 
+  (<*>) (Full f) a = f <$> a
   (<*>) _ _ = Empty
 
 -- | Insert into a constant function.
@@ -148,7 +139,7 @@ instance Applicative ((->) t) where
     ((->) t (a -> b))
     -> ((->) t a)
     -> ((->) t b)
-  (<*>) tab ta = tab <*> ta
+  (<*>) tab ta t = (tab t) (ta t)
 
 
 -- | Apply a binary function in the environment.
@@ -248,8 +239,7 @@ lift0 ::
   Applicative f =>
   a
   -> f a
-lift0 =
-  error "todo: Course.Applicative#lift0"
+lift0 = pure
 
 -- | Apply a unary function in the environment.
 -- /can be written using `lift0` and `(<*>)`./
@@ -267,8 +257,7 @@ lift1 ::
   (a -> b)
   -> f a
   -> f b
-lift1 =
-  error "todo: Course.Applicative#lift1"
+lift1 f fa = pure f <*> fa
 
 -- | Apply, discarding the value of the first argument.
 -- Pronounced, right apply.

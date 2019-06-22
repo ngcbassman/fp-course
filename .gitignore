@@ -37,9 +37,6 @@ TAGS
 # Vagrant
 .vagrant
 ops/*.retry
-<<<<<<< HEAD
 
 .DS_Store
 src/.DS_Store
-=======
->>>>>>> upstream/master

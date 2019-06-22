@@ -84,20 +84,17 @@ instance Functor MaybeListZipper where
 --
 -- >>> toList (ListZipper (3:.2:.1:.Nil) 4 (5:.6:.7:.Nil))
 -- [1,2,3,4,5,6,7]
-toList ::
-  ListZipper a
+toList :: 
+  ListZipper a 
   -> List a
-toList =
-  error "todo: Course.ListZipper#toList"
+toList (ListZipper l a r) = reverse l ++ (a :. Nil) ++ r
 
 -- | Convert the given (maybe) zipper back to a list.
-toListZ ::
-  MaybeListZipper a
+toListZ :: 
+  MaybeListZipper a 
   -> List a
-toListZ IsNotZ =
-  Nil
-toListZ (IsZ z) =
-  toList z
+toListZ IsNotZ = Nil
+toListZ (IsZ z) = toList z
 
 -- | Create a `MaybeListZipper` positioning the focus at the head.
 --
@@ -171,33 +168,6 @@ asMaybeZipper f (IsZ z) =
 (-<<) =
   asMaybeZipper
 
-<<<<<<< HEAD
--- | Convert the given zipper back to a list.
---
--- >>> toList <$> toOptional (fromList Nil)
--- Empty
---
--- >>> toList (ListZipper Nil 1 (2:.3:.4:.Nil))
--- [1,2,3,4]
---
--- >>> toList (ListZipper (3:.2:.1:.Nil) 4 (5:.6:.7:.Nil))
--- [1,2,3,4,5,6,7]
-toList ::
-  ListZipper a
-  -> List a
-toList (ListZipper l a r) = reverse l ++ (a :. Nil) ++ r
-
--- | Convert the given (maybe) zipper back to a list.
-toListZ ::
-  MaybeListZipper a
-  -> List a
-toListZ IsNotZ =
-  Nil
-toListZ (IsZ z) =
-  toList z
-
-=======
->>>>>>> upstream/master
 -- | Update the focus of the zipper with the given function on the current focus.
 --
 -- >>> withFocus (+1) (zipper [] 0 [1])
@@ -284,22 +254,13 @@ findLeft ::
   (a -> Bool)
   -> ListZipper a
   -> MaybeListZipper a
-<<<<<<< HEAD
 findLeft f (ListZipper l a r) =
   let (l', r') = f `break` l in
   case r' of Nil -> IsNotZ 
-             (h :. t) -> IsZ (ListZipper t h (l' ++ (a :. Nil) ++ r))
-  
+             (h :. t) -> IsZ (ListZipper t h (reverse l' ++ (a :. Nil) ++ r))
     
 -- | Seek to the right for a location matching a predicate, starting from the
 -- current one.
-=======
-findLeft =
-  error "todo: Course.ListZipper#findLeft"
-
--- | Seek to the right for a location matching a predicate, excluding the
--- focus.
->>>>>>> upstream/master
 --
 -- /Tip:/ Use `break`
 --
